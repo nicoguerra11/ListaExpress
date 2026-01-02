@@ -1,0 +1,32 @@
+# .github/workflows/keep-supabase-alive.yml
+name: Keep Supabase Active
+
+on:
+  schedule:
+    # Ejecuta una vez al día a las 12:00 UTC (09:00 hora Uruguay)
+    - cron: '0 12 * * *'
+  # Permite ejecutar manualmente desde GitHub
+  workflow_dispatch:
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Ping Supabase Database
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
+          
+          echo "Supabase ping response: $response"
+          
+          if [ "$response" -eq 200 ] || [ "$response" -eq 401 ]; then
+            echo "✅ Supabase is active"
+          else
+            echo "⚠️ Unexpected response: $response"
+          fi
+      
+      - name: Log timestamp
+        run: echo "Last ping at $(date -u)"
