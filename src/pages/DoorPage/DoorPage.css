@@ -389,7 +389,9 @@
 
 .door-message,
 .door-message-success,
-.door-message-error {
+.door-message-warning,
+.door-message-error,
+.door-message-flash {
   padding: 20px 25px;
   border-radius: 50px;
   font-size: 1.1rem;
@@ -397,10 +399,27 @@
   text-align: center;
 }
 
+.door-message-flash {
+  animation: pulse 0.5s ease-in-out 2;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
 .door-message-success {
   background: linear-gradient(135deg, #d1fae5, #ccfbf1);
   border: 3px solid #6ee7b7;
   color: #065f46;
+  font-size: 1.4rem;
+}
+
+.door-message-warning {
+  background: linear-gradient(135deg, #fef3c7, #fed7aa);
+  border: 3px solid #fcd34d;
+  color: #92400e;
+  font-size: 1.4rem;
 }
 
 .door-message-error {

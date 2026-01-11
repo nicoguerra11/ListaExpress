@@ -193,6 +193,15 @@ export default function DoorPage() {
 
     setCheckingIn(true);
 
+    // Actualización optimista: actualizar UI inmediatamente
+    const optimisticResult = {
+      ...result,
+      checked_in_at: new Date().toISOString()
+    };
+    setResult(optimisticResult);
+    setCheckMsg("✅ INGRESANDO...");
+
+    // Guardar en base de datos en segundo plano
     const { data, error } = await supabase
       .from("guests")
       .update({ checked_in_at: new Date().toISOString() })
@@ -201,21 +210,23 @@ export default function DoorPage() {
       .single();
 
     if (error) {
-      setCheckMsg("Error marcando ingreso");
-    } else {
-      setResult(data);
-      setCheckMsg("✅ Ingreso marcado");
-
-      setTimeout(() => {
-        setCi("");
-        setResult(null);
-        setCheckMsg("");
-        setSuggestions([]);
-        setSearchMsg("");
-      }, 2000);
+      // Si hay error, revertir
+      setResult(result);
+      setCheckMsg("❌ Error - Intentá de nuevo");
+      setCheckingIn(false);
+      return;
     }
 
     setCheckingIn(false);
+
+    // Esperar 0.5 segundos antes de limpiar para que vean la confirmación
+    setTimeout(() => {
+      setCi("");
+      setResult(null);
+      setCheckMsg("");
+      setSuggestions([]);
+      setSearchMsg("");
+    }, 500);
   }
 
   function onPickSuggestion(g) {
@@ -360,7 +371,7 @@ export default function DoorPage() {
 
                   <div
                     className={`door-result ${
-                      result?.checked_in_at ? "door-result-warning" : result ? "door-result-success" : ""
+                      result?.checked_in_at && !checkMsg ? "door-result-warning" : result ? "door-result-success" : ""
                     }`}
                   >
                     {!result ? (
@@ -370,40 +381,39 @@ export default function DoorPage() {
                       </div>
                     ) : (
                       <div className="door-result-content">
-                        <div className="door-result-icon-big">{result.checked_in_at ? "⚠️" : "✅"}</div>
+                        <div className="door-result-icon-big">
+                          {result.checked_in_at && !checkMsg ? "⚠️" : "✅"}
+                        </div>
                         <div className="door-result-name">
                           {result.first_name} {result.last_name}
                         </div>
                         <div className="door-result-ci">CI: {result.ci}</div>
-                        <span
-                          className={`door-result-status ${
-                            result.checked_in_at ? "door-badge-warning" : "door-badge-success"
-                          }`}
-                        >
-                          {result.checked_in_at ? "Ya ingresó" : "✓ Puede ingresar"}
-                        </span>
 
-                        <button
-                          onClick={markCheckIn}
-                          disabled={checkingIn || !!result.checked_in_at}
-                          className={result.checked_in_at ? "door-btn-disabled" : "door-btn-success"}
-                          type="button"
-                        >
-                          {result.checked_in_at
-                            ? "❌ Ya ingresó"
-                            : checkingIn
-                              ? "⏳ Marcando..."
-                              : "✅ MARCAR INGRESO"}
-                        </button>
+                        {result.checked_in_at && !checkMsg && (
+                          <div className="door-message-flash door-message-warning">
+                            ⚠️ YA INGRESÓ
+                          </div>
+                        )}
 
                         {checkMsg && (
                           <div
-                            className={`door-message ${
+                            className={`door-message-flash ${
                               checkMsg.includes("✅") ? "door-message-success" : "door-message-error"
                             }`}
                           >
                             {checkMsg}
                           </div>
+                        )}
+
+                        {!result.checked_in_at && !checkMsg && (
+                          <button
+                            onClick={markCheckIn}
+                            disabled={checkingIn}
+                            className="door-btn-success"
+                            type="button"
+                          >
+                            {checkingIn ? "💾 Guardando..." : "✅ MARCAR INGRESO"}
+                          </button>
                         )}
                       </div>
                     )}
